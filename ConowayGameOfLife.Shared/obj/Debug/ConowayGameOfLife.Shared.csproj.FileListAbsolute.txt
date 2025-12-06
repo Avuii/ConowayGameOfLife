@@ -1,0 +1,6 @@
+C:\DH_Development\Projekty\ConowayGameOfLife.Shared\bin\Debug\ConowayGameOfLife.Shared.dll
+C:\DH_Development\Projekty\ConowayGameOfLife.Shared\bin\Debug\ConowayGameOfLife.Shared.pdb
+C:\DH_Development\Projekty\ConowayGameOfLife.Shared\obj\Debug\ConowayGameOfLife.Shared.csproj.AssemblyReference.cache
+C:\DH_Development\Projekty\ConowayGameOfLife.Shared\obj\Debug\ConowayGameOfLife.Shared.csproj.CoreCompileInputs.cache
+C:\DH_Development\Projekty\ConowayGameOfLife.Shared\obj\Debug\ConowayGameOfLife.Shared.dll
+C:\DH_Development\Projekty\ConowayGameOfLife.Shared\obj\Debug\ConowayGameOfLife.Shared.pdb

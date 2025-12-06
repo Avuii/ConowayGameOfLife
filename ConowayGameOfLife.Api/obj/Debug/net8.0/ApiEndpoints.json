@@ -1,0 +1,80 @@
+[
+  {
+    "ContainingType": "ConowayGameOfLife.Api.Controllers.GameBoardController",
+    "Method": "GetAll",
+    "RelativePath": "api/boards",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.List\u00601[[ConowayGameOfLife.Shared.Models.BoardSummaryDto, ConowayGameOfLife.Shared, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ConowayGameOfLife.Api.Controllers.GameBoardController",
+    "Method": "Save",
+    "RelativePath": "api/boards",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "ConowayGameOfLife.Shared.Models.BoardDTo",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ConowayGameOfLife.Api.Controllers.GameBoardController",
+    "Method": "Get",
+    "RelativePath": "api/boards/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "ConowayGameOfLife.Shared.Models.BoardDTo",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "ConowayGameOfLife.Api.Controllers.GameBoardController",
+    "Method": "Delete",
+    "RelativePath": "api/boards/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]

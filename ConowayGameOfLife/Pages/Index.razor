@@ -1,0 +1,183 @@
+﻿@inject GameOfLifeService GameOfLifeService
+@page "/"
+
+@* 
+-stwórz liste zapisanych plansz z przyciskami [load] [delete]
+-zmień przycisk save na save as z moliwoscia nadania nazwy
+
+-header: id, nazwa, seed, data, rozmiar
+-lista: krok, generacja
+
+-
+integracja z bazą danych na ms sql 
+kazda wygenerowana tablica ma swoje unikalne ziarno
+zapisuje stan ziarna - tworzenie danej planszy (jej stanu)
+ktora gen, stan planszy, parametry[width,height], opcja nadania nazwy <- to do bazy danych
+
+ekran z listą zapisanych symulacji po nazwie z opcją powrotu do danego stanu (trzeba zapisac calosc)
+*@
+
+
+
+@if (GameOfLifeService.board != null)
+{
+<div class="gof-outer">
+    <div class="gof-board-wrapper">
+    <table>
+    @for (int y = 0; y < GameOfLifeService.Height; y++)
+    {
+        var localY = y;
+        <tr>
+            @for (int x = 0; x < GameOfLifeService.Width; x++)
+            {
+                var localX = x;
+                <td style="width:20px; height:20px; background:@(GameOfLifeService.board[localX, localY] ? "blue" : "white"); border:1px solid black; cursor:pointer"
+                    @onclick="() => ToggleCell(localX,localY)">
+                </td>
+            }
+        </tr>
+    }
+
+    </table>
+</div>
+<br/>
+ <div class="gof-playing-container">
+    @if (GameOfLifeService.IsPlaying)
+{
+    <div class="gof-playing-alert">
+    <div class="alert alert-info">Playing... (@GameOfLifeService.CurrentPlayStep/@GameOfLifeService.PlayCount)</div>
+    </div>
+}
+</div>
+</div>
+}
+
+@code {
+
+
+    public void CreateBoard()
+    {
+        GameOfLifeService.board = new bool[GameOfLifeService.Width, GameOfLifeService.Height];
+        StateHasChanged();
+    }
+
+    protected override void OnInitialized()
+    {
+        GameOfLifeService.OnSaveRequested += Save;
+        GameOfLifeService.OnNextGenerationRequested += DoNextGeneration;
+        GameOfLifeService.OnPlayRequested += Play;
+        GameOfLifeService.OnClearRequested += ClearBoard;
+        GameOfLifeService.OnCreateRequested += CreateBoard;
+        GameOfLifeService.OnStateChanged += StateHasChanged; //play
+    }
+
+
+    void ToggleCell(int x, int y)
+    {
+        GameOfLifeService.board[x, y] = !GameOfLifeService.board[x, y];
+        StateHasChanged();
+    }
+
+    void DoNextGeneration()
+    {
+        bool[,] newBoard = new bool[GameOfLifeService.Width, GameOfLifeService.Height];
+
+        for (int y = 0; y < GameOfLifeService.Height; y++)
+        {
+            for (int x = 0; x < GameOfLifeService.Width; x++)
+            {
+                int neighbours = CountNeighbours(x, y);
+
+                if (GameOfLifeService.board[x, y])
+                {
+                    newBoard[x, y] = neighbours == 2 || neighbours == 3;
+                }
+                else
+                {
+                    newBoard[x, y] = neighbours == 3;
+                }
+            }
+        }
+
+        GameOfLifeService.board = newBoard;
+        StateHasChanged();
+    }
+
+    int CountNeighbours(int x, int y)
+    {
+        int count = 0;
+
+        for (int dy = -1; dy <= 1; dy++)
+        {
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                if (dx == 0 && dy == 0) continue;
+
+                int nx = x + dx;
+                int ny = y + dy;
+
+                if (nx >= 0 && nx < GameOfLifeService.Width && ny >= 0 && ny < GameOfLifeService.Height)
+                {
+                    if (GameOfLifeService.board[nx, ny]) count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    void ClearBoard()
+    {
+        GameOfLifeService.board = new bool[GameOfLifeService.Width, GameOfLifeService.Height];
+        StateHasChanged();
+    }
+     private async void Play()
+    {
+        if (GameOfLifeService.IsPlaying) return;
+        GameOfLifeService.IsPlaying = true;
+        GameOfLifeService.CurrentPlayStep = 0;
+
+        for (int i = 0; i < GameOfLifeService.PlayCount; i++)
+        {
+            DoNextGeneration();
+            GameOfLifeService.CurrentPlayStep = i + 1;
+            
+            await Task.Delay(400); 
+        }
+
+        GameOfLifeService.IsPlaying = false;
+        
+    }
+
+    private void Save()
+    {
+     
+    }
+
+    public void Dispose()
+    {
+        GameOfLifeService.OnSaveRequested -= Save;
+        GameOfLifeService.OnNextGenerationRequested -= DoNextGeneration;
+        GameOfLifeService.OnPlayRequested -= Play;
+        GameOfLifeService.OnClearRequested -= ClearBoard;
+        GameOfLifeService.OnStateChanged -= StateHasChanged;
+    }
+
+
+    private int _lastWidth = 20, _lastHeight = 20;
+    protected override void OnParametersSet()
+    {
+        if (GameOfLifeService.Width != _lastWidth || GameOfLifeService.Height != _lastHeight)
+        {
+            GameOfLifeService.board = new bool[GameOfLifeService.Width, GameOfLifeService.Height];
+            _lastWidth = GameOfLifeService.Width;
+            _lastHeight = GameOfLifeService.Height;
+        }
+    }
+
+    public void SetWidth(int w)
+    {
+        GameOfLifeService.Width = w;
+        StateHasChanged();
+    }
+
+}

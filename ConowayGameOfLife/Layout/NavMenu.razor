@@ -1,0 +1,258 @@
+﻿@using ConowayGameOfLife.Shared.Models
+@inject GameOfLifeService GameOfLifeService
+@inject GameOfLifeApiClient ApiClient
+
+
+
+<div class="text-center-gof" style="color: white; font-size: 30px; font-weight: bold; text-align: center; margin-top:10px;">
+    Game Of Life
+</div>
+
+<div class="d-flex flex-column gap-2 p-2">
+    <button class="btn btn-primary " @onclick="GameOfLifeService.RequestNextGeneration">Next Generation</button>
+    <button class="btn btn-primary " @onclick="GameOfLifeService.RequestClear">Clear</button>
+</div>
+
+<div class="d-flex flex-column gap-2 p-2">
+    <div class="input-group input-group-sm w-auto">
+        <span class="input-group-text">Width</span>
+        <input style="text-align: center" type="number" min="5" max="100" @bind="GameOfLifeService.Width" class="form-control" />
+        <span class="input-group-text">Height</span>
+        <input style="text-align: center" type="number" min="5" max="100" @bind="GameOfLifeService.Height" class="form-control" />
+    </div>
+</div>
+
+<div class="d-flex flex-column gap-2 p-2">
+    <button class="btn btn-primary" @onclick="GameOfLifeService.RequestCreate">Create</button>
+</div>
+
+<div class="d-flex flex-column gap-2 p-2">
+    <div class="input-group input-group-sm w-auto">
+        <span class="input-group-text">Repeat generations:</span>
+        <input type="number" min="1" max="1000" @bind="GameOfLifeService.PlayCount" class="form-control" />
+    </div>
+</div>
+
+<div class="d-flex flex-column gap-2 p-2">
+    <button class="btn btn-success" @onclick="GameOfLifeService.RequestPlay" disabled="@GameOfLifeService.IsPlaying">Play</button>
+</div>
+
+<!-- SAVE AS -->
+<div class="d-flex flex-column gap-2 p-2">
+    <div class="input-group input-group-sm">
+        <span class="input-group-text">Name</span>
+        <input class="form-control" @bind="newBoardName" placeholder="Board name..." />
+        <button class="btn btn-primary" @onclick="SaveCurrentBoardAsync">Save As</button>
+    </div>
+</div>
+<div class="d-flex flex-column gap-2 p-2">
+     @if (!string.IsNullOrEmpty(saveMessage))
+{
+    <div class="alert alert-success p-2 mt-2">
+        @saveMessage
+    </div>
+}
+</div>
+<hr />
+
+<div class="d-flex flex-column gap-2 p-2">
+    <button class="btn btn-light" @onclick="ToggleBoardsAsync">
+        Table data @(showBoards ? "▲" : "▼")
+    </button>
+</div>
+
+@if (showBoards)
+{
+    <div class="dropdown-menu d-block position-static pt-0 mx-0 rounded-3 shadow overflow-hidden w-280px custom-board-dropdown"
+         data-bs-theme="light">
+
+        <!-- Wyszukiwarka-->
+       
+
+        @if (boards.Count == 0)
+        {
+            <div class="p-2 text-muted">No boards saved.</div>
+        }
+        else
+        {
+            <ul class="list-unstyled mb-0">
+                @foreach (var b in boards)
+                {
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-3 py-2 @(b.Id == selectedBoardId ? "active" : "")"
+                           href="#"
+                           @onclick="@( () => SelectBoard(b))">
+
+                         
+                            <div class="d-flex flex-column">
+                                <span class="fw-bold">@b.Name</span>
+                                <small class="text-muted">@b.Width x @b.Height  @b.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</small>
+                            </div>
+                        </a>
+                    </li>
+                }
+            </ul>
+
+            <div class="d-flex gap-2 p-2 border-top">
+                <button class="btn btn-outline-success btn-sm w-50"
+                        @onclick="LoadSelectedBoardAsync"
+                        disabled="@(!selectedBoardId.HasValue)">
+                    Load
+                </button>
+
+                <button class="btn btn-outline-danger btn-sm w-50"
+                        @onclick="DeleteSelectedBoardAsync"
+                        disabled="@(!selectedBoardId.HasValue)">
+                    Delete
+                </button>
+            </div>
+        }
+    </div>
+}
+
+
+@code {
+@* komunikaty *@
+private string? saveMessage = null;
+private System.Timers.Timer? messageTimer;
+
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu() => collapseNavMenu = !collapseNavMenu;
+
+    protected override void OnInitialized()
+    {
+        GameOfLifeService.OnStateChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        GameOfLifeService.OnStateChanged -= StateHasChanged;
+    }
+
+    // --- LOCAL STATE ---
+
+    private bool showBoards = false;
+    private List<BoardSummaryDto> boards = new();
+    private int? selectedBoardId;
+    private string? selectedBoardName;
+    private string newBoardName = string.Empty;
+
+    // --- TABLE DATA TOGGLE ---
+
+    private async Task ToggleBoardsAsync()
+    {
+        showBoards = !showBoards;
+        if (showBoards)
+            await LoadBoardsListAsync();
+    }
+
+    private async Task LoadBoardsListAsync()
+    {
+        boards = await ApiClient.GetBoardsAsync();
+
+        if (boards.Count == 0)
+        {
+            selectedBoardId = null;
+            selectedBoardName = null;
+        }
+        else
+        {
+            if (!selectedBoardId.HasValue || boards.All(b => b.Id != selectedBoardId))
+            {
+                var first = boards[0];
+                selectedBoardId = first.Id;
+                selectedBoardName = first.Name;
+            }
+        }
+    }
+
+    private void SelectBoard(BoardSummaryDto board)
+    {
+        selectedBoardId = board.Id;
+        selectedBoardName = board.Name;
+    }
+
+    // --- SAVE / LOAD / DELETE ---
+
+    private async Task SaveCurrentBoardAsync()
+{
+    if (GameOfLifeService.board == null)
+        return;
+
+    if (string.IsNullOrWhiteSpace(newBoardName))
+    {
+        newBoardName = $"Board_{DateTime.Now:yyyyMMdd_HHmmss}";
+    }
+
+    var dto = new BoardDTo
+    {
+        Id = 0,
+        Name = newBoardName,
+        Width = GameOfLifeService.Width,
+        Height = GameOfLifeService.Height,
+        Cells = GameOfLifeService.board
+            .Cast<bool>()
+            .Select((cell, index) => new { cell, x = index % GameOfLifeService.Width, y = index / GameOfLifeService.Width })
+            .GroupBy(c => c.y)
+            .Select(g => g.Select(c => c.cell).ToList())
+            .ToList()
+    };
+
+    await ApiClient.SaveBoardAsync(dto);
+
+    // --- SUCCESS MESSAGE ---
+    saveMessage = $"Successfully saved {newBoardName} !";
+    StateHasChanged();
+
+    // auto-hide after 3 seconds
+    if (messageTimer != null)
+        messageTimer.Dispose();
+
+    messageTimer = new System.Timers.Timer(3000);
+    messageTimer.Elapsed += (s, e) =>
+    {
+        saveMessage = null;
+        InvokeAsync(StateHasChanged);
+        messageTimer?.Dispose();
+    };
+    messageTimer.Start();
+
+    newBoardName = string.Empty;
+
+    // refresh list
+    if (showBoards)
+    {
+        await LoadBoardsListAsync();
+    }
+}
+
+
+    private async Task LoadSelectedBoardAsync()
+    {
+        if (!selectedBoardId.HasValue)
+            return;
+
+        var dto = await ApiClient.LoadBoardAsync(selectedBoardId.Value);
+        if (dto is null)
+            return;
+
+        GameOfLifeService.Width = dto.Width;
+        GameOfLifeService.Height = dto.Height;
+        GameOfLifeService.board = GameOfLifeService.FromList2D(dto.Cells);
+
+        GameOfLifeService.RequestChange();
+    }
+
+    private async Task DeleteSelectedBoardAsync()
+    {
+        if (!selectedBoardId.HasValue)
+            return;
+
+        await ApiClient.DeleteBoardAsync(selectedBoardId.Value);
+        await LoadBoardsListAsync();
+    }
+}
+}
