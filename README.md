@@ -23,6 +23,10 @@ It is built using a three-project architecture:
 
 This separation follows clean architectural patterns and enables the client to communicate with the backend through REST.
 
+<img width="1894" height="917" alt="image" src="https://github.com/user-attachments/assets/e50d4d5c-bd0d-4109-bdd2-9228eab271cc" />
+
+
+      
 ---
 
 ## ⚙️ Features
